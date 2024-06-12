@@ -1,11 +1,32 @@
-import { View, Text, TouchableOpacity, TextInput } from "react-native";
+import { View, Text, TouchableOpacity, TextInput, Alert } from "react-native";
 import { useState } from "react";
 import { MaterialIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import api from '@/services/api';
 import styles from '@/components/modalRegister/styles';
 
 export function ModalBook({ onClose }: { onClose: () => void }) {
+    const [bookName, setBookName] = useState('');
+    const [author, setAuthor] = useState('');
     const [selectedGenero, setSelectedGenero] = useState('Selecione');
+
+    async function registerBook() {
+        if (bookName === "" || author === "" || selectedGenero === "Selecione") {
+            Alert.alert("Preencha todos os campos");
+            return;
+        }
+        try {
+            await api.post('/books', {
+                name: bookName,
+                author: author,
+                genre: selectedGenero,
+            });
+            onClose();
+        } catch (error) {
+            console.error("Erro ao cadastrar o livro", error);
+        }
+    }
+
     return (
         <View style={styles.container}>
             <View style={styles.content}>
@@ -16,9 +37,9 @@ export function ModalBook({ onClose }: { onClose: () => void }) {
                 </View>
                 <View style={styles.inputsContainer}>
                     <Text style={styles.label}>Nome do Livro</Text>
-                    <TextInput style={styles.input} />
+                    <TextInput style={styles.input} value={bookName} onChangeText={setBookName} />
                     <Text style={styles.label}>Autor</Text>
-                    <TextInput style={styles.input} />
+                    <TextInput style={styles.input} value={author} onChangeText={setAuthor} />
                     <Text style={styles.label}>Gênero</Text>
                     <Picker
                         selectedValue={selectedGenero}
@@ -37,7 +58,7 @@ export function ModalBook({ onClose }: { onClose: () => void }) {
                         <Picker.Item label="Outro" value="Outro" />
                     </Picker>
                 </View>
-                <TouchableOpacity style={styles.button} onPress={onClose}>
+                <TouchableOpacity style={styles.button} onPress={registerBook}>
                     <Text style={styles.textBtn}>CADASTRAR LIVRO</Text>
                 </TouchableOpacity>
             </View>

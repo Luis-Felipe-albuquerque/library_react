@@ -11,7 +11,7 @@ export type RootStackParamList = {
     Início: undefined;
     Cadastrar: undefined;
     Emprestar: undefined;
-    Histórico: undefined;
+    Histórico: { userId: string };
 };
 
 // Cria um navegador de abas (Tab_bar_Navigation)

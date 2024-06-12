@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import Modal from 'react-native-modal';
 import { Picker } from '@react-native-picker/picker';
@@ -6,21 +6,48 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { RootStackParamList } from '@/routes';
+import api from '@/services/api';
 
 type NavigationProp = BottomTabNavigationProp<RootStackParamList, 'Cadastrar'>;
 
-interface ModalLoginProps {
+interface ModalMenuProps {
     isVisible: boolean;
     onClose: () => void;
 }
 
-export function ModalMenu({ isVisible, onClose }: ModalLoginProps) {
-    const [selectedUser, setSelectedUser] = useState('');
+interface User {
+    id: number;
+    name: string;
+}
+
+export function ModalMenu({ isVisible, onClose }: ModalMenuProps) {
+    const [selectedUser, setSelectedUser] = useState<string>('');
+    const [users, setUsers] = useState<User[]>([]);
     const navigation = useNavigation<NavigationProp>();
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const response = await api.get('/users');
+                setUsers(response.data);
+            } catch (error) {
+                console.error('Erro ao buscar usuários', error);
+            }
+        };
+
+        if (isVisible) {
+            fetchUsers();
+        }
+    }, [isVisible]);
 
     const handleNavigateToRegister = () => {
         onClose();
         navigation.navigate('Cadastrar');
+    };
+
+    const handleUserSelected = (userId: string) => {
+        onClose();
+        navigation.navigate('Histórico', { userId });
     };
 
     return (
@@ -37,13 +64,17 @@ export function ModalMenu({ isVisible, onClose }: ModalLoginProps) {
                     <MaterialIcons name="account-circle" size={40} color="#fff" />
                     <Picker
                         selectedValue={selectedUser}
-                        onValueChange={(itemValue) => setSelectedUser(itemValue)}
+                        onValueChange={(itemValue) => {
+                            setSelectedUser(itemValue);
+                            handleUserSelected(itemValue);
+                        }}
                         style={styles.picker}
                         itemStyle={styles.pickerItem}
                     >
                         <Picker.Item label="Selecione um usuário" value="" />
-                        <Picker.Item label="Usuário 1" value="user1" />
-                        <Picker.Item label="Usuário 2" value="user2" />
+                        {users.map(user => (
+                            <Picker.Item key={user.id} label={user.name} value={user.id.toString()} />
+                        ))}
                     </Picker>
                 </View>
                 <View style={styles.registerContainer}>

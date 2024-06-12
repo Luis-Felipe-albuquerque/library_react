@@ -7,15 +7,14 @@ import { ModalMenu } from '@/components/modalHeader/modalMenu';
 import styles from '@/components/header/styles';
 
 export function CustomHeader() {
+
     const insets = useSafeAreaInsets();
     const [notificationModalVisible, setNotificationModalVisible] = useState(false);
     const [loginModalVisible, setLoginModalVisible] = useState(false);
     const [notifications, setNotifications] = useState<string[]>([]);
-
     const toggleNotificationModal = () => {
         setNotificationModalVisible(!notificationModalVisible);
     };
-
     const toggleLoginModal = () => {
         setLoginModalVisible(!loginModalVisible);
     };

@@ -1,38 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Alert } from 'react-native';
+import { RouteProp, useRoute } from '@react-navigation/native';
 import styles from '@/screens/historic/styles';
+import api from '@/services/api';
+import { RootStackParamList } from '@/routes';
+
+interface Book {
+    id: number;
+    title: string;
+}
+
+interface ReturnedBook {
+    id: number;
+    title: string;
+    returnDate: Date;
+}
+
+type HistoricScreenRouteProp = RouteProp<RootStackParamList, 'Histórico'>;
 
 export default function HistoricScreen() {
-    // Estados para armazenar o usuário, livros emprestados e devolvidos (ATÉ QUE INTEGRE COM O BE)
-    const [selectedUser, setSelectedUser] = useState('');
+    const route = useRoute<HistoricScreenRouteProp>();
+    const { userId } = route.params;
+
     const [borrowedBooks, setBorrowedBooks] = useState<Book[]>([]);
     const [returnedBooks, setReturnedBooks] = useState<ReturnedBook[]>([]);
 
-    // Interface para definir o tipo de livro
-    interface Book {
-        id: number;
-        title: string;
-    }
+    useEffect(() => {
+        const fetchBooks = async () => {
+            try {
+                const borrowedResponse = await api.get(`/lendings/borrowed/${userId}`);
+                const returnedResponse = await api.get(`/lendings/returned/${userId}`);
+                setBorrowedBooks(borrowedResponse.data);
+                setReturnedBooks(returnedResponse.data.map((book: any) => ({
+                    ...book,
+                    returnDate: new Date(book.returnDate),
+                })));
+            } catch (error) {
+                console.error('Erro ao buscar livros', error);
+            }
+        };
 
-    // Interface para definir o tipo de livro devolvido
-    interface ReturnedBook {
-        id: number;
-        title: string;
-        returnDate: Date;
-    }
+        fetchBooks();
+    }, [userId]);
 
-    // Função para lidar com a devolução de um livro emprestado
-    const handleReturnBook = (bookId: number) => {
-        // Atualizar os estados de "borrowedBooks" e "returnedBooks" (INTEGRAR COM BE [PESQUISAR SOBRE])
-        const updatedBorrowedBooks = borrowedBooks.filter(book => book.id !== bookId);
-        setBorrowedBooks(updatedBorrowedBooks);
-        setReturnedBooks([...returnedBooks, { id: bookId, title: borrowedBooks.find(book => book.id === bookId)?.title || '', returnDate: new Date() }]); // Adicionar data de devolução ao objeto do livro devolvido
-        Alert.alert('Livro devolvido com sucesso!');
+    const handleReturnBook = async (bookId: number) => {
+        try {
+            await api.post(`/lendings/${bookId}/return`);
+            const updatedBorrowedBooks = borrowedBooks.filter(book => book.id !== bookId);
+            const returnedBook = borrowedBooks.find(book => book.id === bookId);
+            if (returnedBook) {
+                setReturnedBooks([...returnedBooks, { ...returnedBook, returnDate: new Date() }]);
+            }
+            setBorrowedBooks(updatedBorrowedBooks);
+            Alert.alert('Livro devolvido com sucesso!');
+        } catch (error) {
+            console.error('Erro ao devolver o livro', error);
+            Alert.alert('Erro ao devolver o livro');
+        }
     };
 
     return (
         <View style={styles.container}>
-            {/* Seção "Meus Livros" */}
             <Text style={styles.sectionTitle}>Meus Livros</Text>
             <FlatList
                 data={borrowedBooks}
@@ -44,10 +72,9 @@ export default function HistoricScreen() {
                         </TouchableOpacity>
                     </View>
                 )}
-                keyExtractor={item => item.id.toString()} // Chave única para cada item
+                keyExtractor={item => item.id.toString()}
             />
 
-            {/* Seção "Livros Entregues" */}
             <Text style={styles.sectionTitle}>Livros Entregues</Text>
             <FlatList
                 data={returnedBooks}

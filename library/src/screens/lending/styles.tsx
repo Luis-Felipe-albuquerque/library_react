@@ -30,6 +30,11 @@ export default StyleSheet.create({
         paddingHorizontal: 10,
         fontSize: 16,
         backgroundColor: '#fff',
+        elevation: 3, // Adds shadow for Android
+        shadowColor: '#000', // Shadow color for iOS
+        shadowOffset: { width: 0, height: 2 }, // Shadow offset for iOS
+        shadowOpacity: 0.2, // Shadow opacity for iOS
+        shadowRadius: 5, // Shadow radius for iOS
     },
     datePicker: {
         backgroundColor: '#fff',

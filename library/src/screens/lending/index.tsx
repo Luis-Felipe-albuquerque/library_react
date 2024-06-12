@@ -1,23 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import styles from '@/screens/lending/styles';
+import api from '@/services/api';
 
 export default function LendingScreen() {
-    // Estados para armazenar o usuário e o livro selecionados, a data e a visibilidade do DateTimePicker (Onde vou conectar com o BE)
     const [selectedUser, setSelectedUser] = useState('');
     const [selectedBook, setSelectedBook] = useState('');
     const [date, setDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [users, setUsers] = useState([]);
+    const [books, setBooks] = useState([]);
 
-    // Função para emprestar um livro e aparecer um pop-up de retorno
-    const handleLendBook = () => {
-        Alert.alert("Livro Emprestado");
+    useEffect(() => {
+        const fetchUsersAndBooks = async () => {
+            try {
+                const usersResponse = await api.get('/users');
+                const booksResponse = await api.get('/books');
+                setUsers(usersResponse.data);
+                setBooks(booksResponse.data);
+            } catch (error) {
+                console.error("Erro ao buscar usuários e livros", error);
+            }
+        };
+
+        fetchUsersAndBooks();
+    }, []);
+
+    const handleLendBook = async () => {
+        if (selectedUser === '' || selectedBook === '') {
+            Alert.alert("Selecione um usuário e um livro");
+            return;
+        }
+        try {
+            await api.post('/lendings', {
+                userId: selectedUser,
+                bookId: selectedBook,
+                date: date.toISOString(),
+            });
+            Alert.alert("Livro Emprestado");
+        } catch (error) {
+            console.error("Erro ao emprestar o livro", error);
+        }
     };
 
-    // Função para devolver um livro e aparecer um pop-up de retorno
-    const handleReturnBook = () => {
+    const handleReturnBook = async () => {
+        // Implementar lógica de devolução do livro
         Alert.alert("Livro Entregue");
     };
 
@@ -31,8 +60,9 @@ export default function LendingScreen() {
                     style={styles.input}
                 >
                     <Picker.Item label="Selecione um usuário" value="" />
-                    <Picker.Item label="Usuário 1" value="user1" />
-                    <Picker.Item label="Usuário 2" value="user2" />
+                    {users.map((user: any) => (
+                        <Picker.Item key={user.id} label={user.name} value={user.id} />
+                    ))}
                 </Picker>
             </View>
 
@@ -44,14 +74,15 @@ export default function LendingScreen() {
                     style={styles.input}
                 >
                     <Picker.Item label="Selecione um livro" value="" />
-                    <Picker.Item label="Livro 1" value="book1" />
-                    <Picker.Item label="Livro 2" value="book2" />
+                    {books.map((book: any) => (
+                        <Picker.Item key={book.id} label={book.name} value={book.id} />
+                    ))}
                 </Picker>
             </View>
 
             <Text style={styles.label}>Data</Text>
             <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePicker}>
-                <Text>{new Date(date.getFullYear(), date.getMonth(), date.getDate()).toLocaleDateString('pt-BR', { day: 'numeric', month: 'numeric', year: 'numeric' })}</Text>
+                <Text>{date.toLocaleDateString('pt-BR')}</Text>
             </TouchableOpacity>
             {showDatePicker && (
                 <DateTimePicker
@@ -67,11 +98,9 @@ export default function LendingScreen() {
                 />
             )}
 
-            {/* Botão para emprestar o livro */}
             <TouchableOpacity style={styles.button} onPress={handleLendBook}>
                 <Text style={styles.textBtn}>EMPRESTAR</Text>
             </TouchableOpacity>
-            {/* Botão para devolver o livro */}
             <TouchableOpacity style={styles.button} onPress={handleReturnBook}>
                 <Text style={styles.textBtn}>ENTREGAR</Text>
             </TouchableOpacity>
